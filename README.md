@@ -94,7 +94,7 @@ The project focuses on practical skills relevant to:
 This project includes real troubleshooting encountered during the build rather than following a completely scripted installation.
 
 | Issue                                   | Root Cause                                                                              | Resolution                                                           |
-| --------------------------------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| --------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | Zabbix dependency errors                | Initial Ubuntu environment was incompatible with the required Zabbix package repository | Rebuilt the monitoring server on Ubuntu 24.04 LTS                    |
 | Zabbix database initialization problems | Database privileges, MySQL configuration, and interrupted schema import                 | Corrected database configuration and performed a clean schema import |
 | EVE-NG unreachable                      | Bridged networking over Wi-Fi failed to provide reliable connectivity                   | Switched the VM to NAT + DHCP                                        |
@@ -156,23 +156,27 @@ Where appropriate, **Wireshark** will be used to collect packet-level evidence d
 # 📸 Current Evidence
 
 ### 01 — Ubuntu Network Configuration
-
+![Ubuntu network interface](screenshots/01-ubuntu-network-interface.png)
 Verified IP configuration, interface status, and connectivity.
 
 ### 02 — SSH Service
-
+![SSH service running](screenshots/02-ubuntu-ssh-service-running.png)
 Confirmed remote administration access to the Ubuntu monitoring server.
 
-### 03 — Zabbix Dashboard
+### 03 — SNMP Service
+![SNMP service running](screenshots/03-ubuntu-snmp-service-running.png)
+SNMP daemon enabled and listening, laying the groundwork for network-device monitoring.
 
+### 04 — Zabbix Dashboard
+![Zabbix dashboard](screenshots/04_zabbix_dashboard_first_login.png)
 Verified the Zabbix monitoring platform and web frontend are operational.
 
-### 04 — Live Host Monitoring
-
+### 05 — Live Host Monitoring
+![Ubuntu host monitored](screenshots/05_ubuntu_host_monitored.png)
 Confirmed Zabbix Agent metrics for CPU, memory, and disk are being collected.
 
-### 05 — EVE-NG Web Interface
-
+### 06 — EVE-NG Web Interface
+![EVE-NG login](screenshots/06_eveng_web_dashboard_login.png)
 Verified EVE-NG is deployed and accessible after resolving the initial networking issue.
 
 > Additional screenshots will be added as each phase is completed.
