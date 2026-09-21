@@ -1,6 +1,6 @@
 # NOC Infrastructure Monitoring & Incident Response Lab
 
-A hands-on **NOC simulation project** demonstrating practical skills in **infrastructure monitoring, Linux administration, SNMP, network troubleshooting, virtual networking, and incident response**.
+A hands-on **NOC simulation project** demonstrating practical skills in **infrastructure monitoring, Linux administration, SNMP, network troubleshooting, virtual networking, incident detection, remediation, and recovery verification**.
 
 Built end-to-end using **Ubuntu Server 24.04 LTS, Zabbix 7.4, EVE-NG, VMware Workstation Pro, and Wireshark**.
 
@@ -14,13 +14,13 @@ The project follows a practical operational workflow:
 
 Build and operate a small simulated NOC environment capable of:
 
-* Monitoring infrastructure and network services
+* Monitoring infrastructure and network availability
 * Collecting host and SNMP metrics
-* Detecting availability and performance issues
+* Detecting service and connectivity failures
 * Investigating technical incidents
 * Performing structured troubleshooting and remediation
 * Verifying service recovery
-* Documenting incidents and technical findings
+* Documenting technical findings
 
 **Target roles:**
 
@@ -40,50 +40,70 @@ Build and operate a small simulated NOC environment capable of:
        Ubuntu Server 24.04                   EVE-NG
           Ubuntu-NOC                       Network Lab
        192.168.80.131                          │
-              │                         ┌──────┴──────┐
-      ┌───────┼────────┐                │             │
-      ▼       ▼        ▼                ▼             ▼
-   Zabbix   MySQL    Apache        R1-NOC-Router  SW1-NOC-Switch
-      │                                      │             │
-      │                                      └──────┬──────┘
-      │                                             │
-      ▼                                       NOC-Host01
-  SNMP Monitoring                              NOC-Host02
+              │                                │
+      ┌───────┼────────┐                 Cloud0 / Management
+      │       │        │                         │
+      ▼       ▼        ▼                         ▼
+   Zabbix   MySQL    Apache              R1-NOC-Router
+      │                                           │
+      │                              ┌────────────┴────────────┐
+      │                              │                         │
+      │                              ▼                         ▼
+      │                         NOC-Host01                NOC-Host02
+      │                        192.168.100.10            192.168.101.10
       │
-      ▼
- Metrics / Alerts
+      ├── SNMP Monitoring
       │
-      ▼
- Incident Investigation
-      │
-      ▼
-   Wireshark
+      └── ICMP Monitoring of R1
+              │
+              ▼
+        Metrics / Alerts
+              │
+              ▼
+      Incident Investigation
+              │
+              ▼
+          Wireshark
 ```
 
 ### Management Network
 
-| System     | Address          | Purpose                         |
-| ---------- | ---------------- | ------------------------------- |
-| Ubuntu-NOC | `192.168.80.131` | Zabbix / SNMP monitoring server |
-| EVE-NG     | `192.168.80.132` | Network simulation platform     |
-| SNMP       | UDP `161`        | Infrastructure monitoring       |
+| System        | Address          | Purpose                                  |
+| ------------- | ---------------- | ---------------------------------------- |
+| Ubuntu-NOC    | `192.168.80.131` | Zabbix / SNMP monitoring server          |
+| EVE-NG        | `192.168.80.132` | Network simulation platform              |
+| R1-NOC-Router | `192.168.80.133` | Simulated router / ICMP-monitored device |
+| SNMP          | UDP `161`        | Ubuntu infrastructure monitoring         |
+
+### Simulated Network
+
+| Device        | Address             | Purpose                  |
+| ------------- | ------------------- | ------------------------ |
+| R1-NOC-Router | `192.168.100.1/24`  | NOC network gateway      |
+| R1-NOC-Router | `192.168.101.1/24`  | Second simulated network |
+| NOC-Host01    | `192.168.100.10/24` | Simulated endpoint       |
+| NOC-Host02    | `192.168.101.10/24` | Simulated endpoint       |
+
+R1 was configured with separate interfaces for the two simulated networks, and connectivity between the hosts was verified through the router.
 
 ---
 
 # 🛠️ Technology Stack
 
-| Category           | Technologies                 |
-| ------------------ | ---------------------------- |
-| OS                 | Ubuntu Server 24.04 LTS      |
-| Monitoring         | Zabbix 7.4                   |
-| Network Monitoring | SNMP / SNMPv2c               |
-| Database           | MySQL                        |
-| Web Server         | Apache 2                     |
-| Network Simulation | EVE-NG Pro 7.2.0-4-PRO       |
-| Packet Analysis    | Wireshark                    |
-| Virtualization     | VMware Workstation Pro       |
-| Administration     | SSH, Bash, APT, systemd      |
-| Networking         | TCP/IP, DNS, DHCP, UDP, SNMP |
+| Category                | Technologies                 |
+| ----------------------- | ---------------------------- |
+| Operating System        | Ubuntu Server 24.04 LTS      |
+| Monitoring              | Zabbix 7.4                   |
+| Network Monitoring      | SNMP / SNMPv2c               |
+| Availability Monitoring | ICMP                         |
+| Database                | MySQL                        |
+| Web Server              | Apache 2                     |
+| Network Simulation      | EVE-NG Pro 7.2.0-4-PRO       |
+| Packet Analysis         | Wireshark                    |
+| Virtualization          | VMware Workstation Pro       |
+| Linux Administration    | SSH, Bash, APT, systemd      |
+| Networking              | TCP/IP, DNS, DHCP, UDP, SNMP |
+| Routing                 | FRRouting (FRR)              |
 
 ---
 
@@ -103,33 +123,48 @@ Build and operate a small simulated NOC environment capable of:
 * Installed and configured **SNMP**
 * Verified SNMP daemon operation
 * Verified UDP/161 listening
-* Successfully performed local SNMP polling
-* Successfully performed network SNMP polling
+* Performed local SNMP polling
+* Performed remote network SNMP polling
+* Verified Zabbix server-side data collection and event processing
 
 ---
 
-# 📡 Zabbix SNMP Monitoring
+# 📡 Zabbix Monitoring
 
-A dedicated Zabbix host was created for SNMP-based monitoring:
+The project uses two different monitoring approaches.
+
+### Ubuntu-Noc-Server
+
+Monitored using:
+
+```text
+Zabbix Agent
+```
+
+Used for standard Linux host monitoring including CPU, memory, disk, and system metrics.
+
+### Ubuntu-Noc-SNMP
+
+Dedicated SNMP-monitored host:
 
 ```text
 Host: Ubuntu-Noc-SNMP
 IP: 192.168.80.131
-SNMP: UDP/161
-Version: SNMPv2c
+Protocol: SNMPv2c
+Port: UDP/161
 Template: Linux by SNMP
 ```
 
-Zabbix successfully collected SNMP-based monitoring data including:
+Zabbix successfully collected SNMP-based data including:
 
 * CPU metrics
 * Memory metrics
 * System information
 * Load averages
 * Uptime
-* ICMP availability
 * Network-related metrics
 * Storage/filesystem information
+* Availability information
 
 ### SNMP Verification
 
@@ -139,57 +174,79 @@ Network-level SNMP connectivity was verified using:
 snmpwalk -v2c -c public 192.168.80.131 1.3.6.1.2.1.1
 ```
 
-The successful response returned standard SNMP system information including:
-
-* System description
-* System uptime
-* System name
-* SNMP system OIDs
-
-This verified that the SNMP service was reachable over the network and could be monitored by Zabbix.
+The successful response returned standard SNMP system information, confirming that SNMP was reachable over the network.
 
 ---
 
 # 🌐 EVE-NG Network Environment
 
-Deployed **EVE-NG Pro 7.2.0-4-PRO** as the network simulation environment.
+**EVE-NG Pro 7.2.0-4-PRO** was deployed as the network simulation platform.
 
 ### Completed
 
 * EVE-NG deployment
-* Virtual networking configuration
 * NAT + DHCP configuration
 * Management network configuration
 * Web interface access
 * NOC topology creation
-* Router node
-* Switch node
-* Two host nodes
+* FRRouting router deployment
+* Virtual host deployment
+* Router interface configuration
+* Inter-network connectivity testing
+* R1 management connectivity
+* ICMP monitoring of the simulated router
 
 ### Current Topology
 
 ```text
-              Cloud0 / Management
-                       │
-                       ▼
-                R1-NOC-Router
-                       │
-                       ▼
-                SW1-NOC-Switch
-                  /          \
-                 /            \
-        NOC-Host01          NOC-Host02
+                  Cloud0 / Management
+                          │
+                          ▼
+                   R1-NOC-Router
+                  /             \
+                 /               \
+                ▼                 ▼
+          NOC-Host01          NOC-Host02
+        192.168.100.10       192.168.101.10
 ```
 
-The topology provides a simulated network environment for availability, connectivity, and future network-device monitoring scenarios.
+The EVE-NG environment provides a simulated network in which availability, routing, connectivity, and monitoring scenarios can be tested.
 
-> **Note:** The EVE-NG topology is operational as a simulation environment. Direct Zabbix monitoring of the simulated router/switch is a future enhancement and is not being claimed as completed monitoring functionality.
+A switch node is retained in the EVE-NG project as part of the lab environment, but the currently monitored traffic path uses the working direct R1-to-host topology.
+
+---
+
+# 📊 R1 Availability Monitoring
+
+The simulated FRR router was added to Zabbix as:
+
+```text
+Host: R1-NOC-Router
+Management IP: 192.168.80.133
+Monitoring: ICMP
+```
+
+Zabbix successfully collected:
+
+* ICMP availability
+* ICMP packet loss
+* ICMP response time
+
+Example healthy state:
+
+```text
+ICMP Ping: Up (1)
+ICMP Loss: 0%
+ICMP Response Time: ~1 ms
+```
+
+This demonstrates practical monitoring of a network device's **availability and response time** without claiming unsupported SNMP functionality.
 
 ---
 
 # 🔧 Troubleshooting Performed
 
-This project includes **real troubleshooting performed during deployment**, not just installation screenshots.
+This project includes **real troubleshooting performed during deployment and testing**, rather than only following installation procedures.
 
 ---
 
@@ -213,7 +270,7 @@ Checked:
 * `/etc/snmp/snmpd.conf`
 * SNMP configuration entries
 
-Identified a conflicting `agentaddress` configuration.
+A conflicting `agentaddress` configuration was identified.
 
 ### Resolution
 
@@ -227,7 +284,7 @@ Confirmed the daemon was listening on:
 0.0.0.0:161
 ```
 
-Network SNMP polling then succeeded against:
+Remote SNMP polling then succeeded against:
 
 ```text
 192.168.80.131
@@ -247,7 +304,7 @@ Tested VM networking and host-to-VM connectivity.
 
 ### Resolution
 
-Reconfigured the EVE-NG VM to:
+Reconfigured the EVE-NG VM to use:
 
 ```text
 NAT + DHCP
@@ -257,15 +314,15 @@ Web access was subsequently verified.
 
 ---
 
-## Zabbix Database Configuration Issue
+## Zabbix Database Authentication Issue
 
 ### Problem
 
-The Zabbix server process was running, but the frontend reported that the Zabbix server was not running.
+The Zabbix frontend reported that the Zabbix server was not running even though the service process was active.
 
 ### Investigation
 
-Reviewed the Zabbix server log and identified:
+Reviewed the Zabbix server logs and identified a database authentication failure:
 
 ```text
 [Z3001] connection to database 'zabbix' failed: [1045] Access denied
@@ -275,9 +332,9 @@ database is down: reconnecting in 10 seconds
 Verified:
 
 * MySQL service was operational
-* The `zabbix` database existed
-* The `zabbix` MySQL account existed
-* Database credentials worked through a direct MySQL connection
+* Zabbix database existed
+* Zabbix MySQL account existed
+* Database credentials worked through direct MySQL testing
 
 ### Resolution
 
@@ -285,14 +342,14 @@ Corrected the Zabbix server database authentication configuration and restarted 
 
 ### Verification
 
-Confirmed through Zabbix **System information**:
+Confirmed through Zabbix System Information:
 
 ```text
 Zabbix server is running: Yes
 Zabbix server version: 7.4.14
 ```
 
-This restored Zabbix server-side data collection and event processing.
+This restored server-side monitoring and event processing.
 
 ---
 
@@ -310,31 +367,51 @@ Reviewed:
 * Inventory fields
 * Graphs
 * Low-level discovery rules
-* Existing `Linux by Zabbix agent` template configuration
+* Existing `Linux by Zabbix agent` configuration
 
 ### Resolution
 
-Kept the existing agent-monitored host unchanged and created a dedicated SNMP host:
+Kept the existing agent-monitored host unchanged and created a dedicated:
 
 ```text
 Ubuntu-Noc-SNMP
 ```
 
-using:
+host using:
 
 ```text
 Linux by SNMP
 ```
 
-This separated agent-based and SNMP-based monitoring and allowed SNMP monitoring without disrupting the existing host configuration.
+This separated agent-based and SNMP-based monitoring while avoiding conflicts.
 
 ---
 
-# 🚨 Incident Response — SNMP Service Failure
+# 🚨 Incident Response
 
-A controlled monitoring incident was created to demonstrate the NOC detection and response workflow.
+Two controlled incidents were successfully simulated and recovered.
 
-### Incident Scenario
+The incident workflow used throughout the project was:
+
+```text
+Detect
+  ↓
+Triage
+  ↓
+Investigate
+  ↓
+Remediate
+  ↓
+Verify Recovery
+  ↓
+Document
+```
+
+---
+
+## Incident 1 — SNMP Service Failure
+
+### Scenario
 
 The Ubuntu SNMP service was intentionally stopped:
 
@@ -342,7 +419,7 @@ The Ubuntu SNMP service was intentionally stopped:
 sudo systemctl stop snmpd
 ```
 
-### Technical Verification
+### Investigation
 
 SNMP connectivity was tested using:
 
@@ -350,11 +427,11 @@ SNMP connectivity was tested using:
 sudo -u zabbix snmpwalk -v2c -c public 192.168.80.131 1.3.6.1.2.1.1.1.0
 ```
 
-The request timed out, confirming that the simulated SNMP outage was real.
+The request timed out, confirming the simulated monitoring failure.
 
 ### Zabbix Detection
 
-After the Zabbix server database connection was restored, Zabbix successfully generated Problems for:
+Zabbix generated Problems for:
 
 ```text
 Ubuntu-Noc-SNMP
@@ -364,11 +441,6 @@ including:
 
 ```text
 Linux: No SNMP data collection
-```
-
-and the dedicated incident trigger:
-
-```text
 NOC Incident: SNMP Service Unavailable
 ```
 
@@ -379,7 +451,13 @@ PROBLEM
 Severity: Warning
 ```
 
-This demonstrated:
+### Response
+
+The SNMP service was restored and SNMP polling was verified again.
+
+### Result
+
+The incident demonstrated the complete monitoring cycle:
 
 ```text
 SNMP Service Failure
@@ -390,26 +468,85 @@ Zabbix Detection
         ↓
 Problem Event
         ↓
-Incident Investigation
+Investigation
+        ↓
+Service Recovery
+        ↓
+Monitoring Verification
 ```
-
-### Current Incident Status
-
-The detection portion of the incident has been successfully demonstrated.
-
-The remaining steps are:
-
-* Investigate the service state
-* Restore the SNMP service
-* Verify SNMP polling recovery
-* Verify Zabbix problem recovery
-* Document the incident
 
 ---
 
-# 📊 Monitoring Workflow
+## Incident 2 — Router Availability Failure
 
-The environment follows this operational workflow:
+### Scenario
+
+The monitored FRR router:
+
+```text
+R1-NOC-Router
+192.168.80.133
+```
+
+was intentionally stopped in EVE-NG.
+
+### Zabbix Detection
+
+Zabbix detected the loss of ICMP connectivity and generated:
+
+```text
+ICMP Ping: Unavailable by ICMP ping
+```
+
+with:
+
+```text
+Severity: High
+```
+
+### Recovery
+
+The router was restarted in EVE-NG.
+
+Connectivity was then verified from Ubuntu:
+
+```bash
+ping -c 4 192.168.80.133
+```
+
+Successful replies confirmed network recovery.
+
+Zabbix subsequently recorded the event as:
+
+```text
+RESOLVED
+```
+
+with a recorded recovery time.
+
+### Result
+
+This demonstrated:
+
+```text
+Router Failure
+      ↓
+ICMP Monitoring Failure
+      ↓
+Zabbix High-Severity Problem
+      ↓
+Infrastructure Recovery
+      ↓
+Connectivity Verification
+      ↓
+Zabbix Recovery
+```
+
+---
+
+# 📈 Monitoring & Incident Workflow
+
+The completed environment follows:
 
 ```text
 Infrastructure
@@ -433,74 +570,13 @@ Recovery Verification
 Incident Documentation
 ```
 
-The monitoring and detection foundation is operational, and the first controlled SNMP incident has successfully generated a Zabbix Problem.
-
----
-
-# 🚨 Planned Incident Scenarios
-
-## Incident 1 — SNMP Service Failure
-
-**Status: Detection demonstrated**
-
-```text
-Stop SNMP Service
-       ↓
-SNMP Polling Failure
-       ↓
-Zabbix Problem
-       ↓
-Investigate
-       ↓
-Restore Service
-       ↓
-Verify Recovery
-       ↓
-Document
-```
-
----
-
-## Incident 2 — Host Availability
-
-Simulate a monitored host becoming unavailable.
-
-```text
-Host Unavailable
-       ↓
-Zabbix Detection
-       ↓
-Connectivity Investigation
-       ↓
-Root Cause
-       ↓
-Remediation
-       ↓
-Recovery Verification
-```
-
----
-
-## Additional Scenarios
-
-Potential future scenarios include:
-
-* Packet loss
-* High CPU utilization
-* High memory utilization
-* Network interface failure
-* DNS resolution failure
-* DHCP failure
-* Service availability failure
-* Network connectivity problems
-
-**Wireshark** will be used where packet-level investigation provides useful evidence.
+The lab demonstrates both **service-level monitoring through SNMP** and **network-device availability monitoring through ICMP**.
 
 ---
 
 # 📸 Project Evidence
 
-The implementation is supported by screenshots documenting the actual lab build and monitoring results.
+The implementation is supported by screenshots documenting the actual build, monitoring, troubleshooting, and incident-response work.
 
 ### 01 — Ubuntu Network Configuration
 
@@ -530,7 +606,7 @@ Verified successful Zabbix deployment and frontend access.
 
 ![Live Host Monitoring](screenshots/05_ubuntu_host_monitored.png)
 
-Verified Zabbix collection of live host metrics.
+Verified Zabbix collection of live Linux host metrics.
 
 ### 06 — EVE-NG Web Interface
 
@@ -542,7 +618,7 @@ Verified EVE-NG deployment and web access.
 
 ![EVE-NG NOC Topology](screenshots/07-eveng-noc-topology.png)
 
-Shows the simulated NOC network topology.
+Shows the simulated NOC network environment.
 
 ### 08 — Successful Network SNMP Polling
 
@@ -554,7 +630,7 @@ Demonstrates successful remote SNMPv2c polling.
 
 ![Zabbix SNMP Host](screenshots/09-Zabbix-Ubuntu-SNMP-Host-Configuration.png)
 
-Shows the dedicated SNMP-monitored host and `Linux by SNMP` template configuration.
+Shows the dedicated SNMP-monitored host and `Linux by SNMP` configuration.
 
 ### 10 — Zabbix SNMP Live Metrics
 
@@ -562,6 +638,156 @@ Shows the dedicated SNMP-monitored host and `Linux by SNMP` template configurati
 
 Shows Zabbix successfully collecting SNMP monitoring data.
 
-### 11 — Zabbix SNMP Incident Detected
+### 11 — SNMP Incident Detected
 
 ![Zabbix SNMP Incident](screenshots/11-zabbix-snmp-incident-detected.png)
+
+Shows Zabbix detecting the simulated SNMP service failure.
+
+### 12 — R1 Router Incident Detected
+
+![R1 Incident Detected](screenshots/12-zabbix-r1-incident-detected.png)
+
+Shows Zabbix detecting the simulated R1 router availability failure with a High-severity ICMP problem.
+
+### 13 — R1 Incident Recovered
+
+![R1 Incident Recovered](screenshots/13-zabbix-r1-incident-recovered.png)
+
+Shows the R1 incident transitioning to **RESOLVED** after router recovery and connectivity verification.
+
+---
+
+# 🧠 Skills Demonstrated
+
+### Monitoring & NOC Operations
+
+* Zabbix server deployment
+* Host monitoring
+* SNMP monitoring
+* ICMP availability monitoring
+* Alert/problem investigation
+* Incident detection
+* Recovery verification
+* Monitoring validation
+
+### Linux Administration
+
+* Ubuntu Server administration
+* SSH
+* Bash
+* APT package management
+* systemd service management
+* SNMP configuration
+* Network troubleshooting
+* Service verification
+
+### Networking
+
+* TCP/IP
+* IPv4 addressing
+* DNS
+* DHCP
+* UDP
+* SNMP
+* ICMP
+* Routing
+* Virtual networking
+* Network connectivity troubleshooting
+
+### Network Simulation
+
+* EVE-NG
+* FRRouting
+* Virtual network topology design
+* Router interface configuration
+* Simulated endpoint connectivity
+
+### Troubleshooting
+
+* Log analysis
+* Service-state investigation
+* Configuration troubleshooting
+* Database authentication troubleshooting
+* SNMP connectivity troubleshooting
+* Network connectivity testing
+* Incident isolation
+* Recovery validation
+
+### Tools
+
+* Zabbix
+* EVE-NG
+* VMware Workstation Pro
+* Wireshark
+* MySQL
+* Apache
+* SSH
+* Bash
+* Linux networking utilities
+
+---
+
+# 📋 Project Status
+
+| Component                         | Status     |
+| --------------------------------- | ---------- |
+| Ubuntu Monitoring Server          | ✅ Complete |
+| Zabbix Server                     | ✅ Complete |
+| Zabbix Agent Monitoring           | ✅ Complete |
+| SNMP Monitoring                   | ✅ Complete |
+| EVE-NG Environment                | ✅ Complete |
+| Network Simulation                | ✅ Complete |
+| R1 ICMP Monitoring                | ✅ Complete |
+| Incident Detection                | ✅ Complete |
+| SNMP Incident Recovery            | ✅ Complete |
+| R1 Availability Incident Recovery | ✅ Complete |
+| Troubleshooting Documentation     | ✅ Complete |
+| Project Evidence                  | ✅ Complete |
+| README Documentation              | ✅ Complete |
+
+### Overall Status
+
+**🟢 Complete**
+
+---
+
+# 💼 Project Value
+
+This project demonstrates the practical workflow used in entry-level **IT Support, Service Desk, NOC, Network Support, and Infrastructure Support** environments:
+
+> **Monitor → Detect → Investigate → Troubleshoot → Remediate → Verify → Document**
+
+Rather than only configuring monitoring software, the project demonstrates the complete operational cycle by creating controlled infrastructure failures, analyzing monitoring results, restoring affected services, and verifying recovery.
+
+---
+
+# 🚀 Future Enhancements
+
+Possible future extensions include:
+
+* High CPU incident simulation
+* High memory utilization incident
+* Packet-loss investigation
+* Network interface failure simulation
+* DNS failure scenario
+* DHCP troubleshooting scenario
+* Additional Linux hosts
+* Microsoft 365 / Entra ID integration
+* PowerShell-based monitoring automation
+
+These are optional extensions and are **not required for the completed project**.
+
+---
+
+# 👨‍💻 About
+
+Built as a hands-on portfolio project to demonstrate practical **IT infrastructure monitoring, Linux administration, networking, troubleshooting, and NOC incident-response skills**.
+
+**Focus:** IT Support · Service Desk · Junior NOC · Network Support · Infrastructure Support
+
+---
+
+## Project Status
+
+**🟢 Complete — Core monitoring, network simulation, incident detection, recovery, troubleshooting, and documentation demonstrated.**
